@@ -1,0 +1,840 @@
+EMU8086 GENERATED LISTING. MACHINE CODE <- SOURCE.
+ 
+code2.bin -- emu8086 assembler version: 4.08  
+ 
+[ 20-04-2019  --  08:01:27 ] 
+ 
+===================================================================================================
+[LINE]     LOC: MACHINE CODE                          SOURCE
+===================================================================================================
+ 
+[   1]        :                                       ;To initialise the model tiny of initial part
+[   2]        :                                       #make_bin#
+[   3]        :                                       
+[   4]        :                                       #LOAD_SEGMENT=FFFFh#
+[   5]        :                                       #LOAD_OFFSET=0000h#
+[   6]        :                                       
+[   7]        :                                       #CS=0000h#
+[   8]        :                                       #IP=0000h#
+[   9]        :                                       
+[  10]        :                                       #DS=0000h#
+[  11]        :                                       #ES=0000h#
+[  12]        :                                       
+[  13]        :                                       #SS=0000h#
+[  14]        :                                       #SP=FFFEh#
+[  15]        :                                       
+[  16]        :                                       #AX=0000h#
+[  17]        :                                       #BX=0000h#
+[  18]        :                                       #CX=0000h#
+[  19]        :                                       #DX=0000h#
+[  20]        :                                       #SI=0000h#
+[  21]        :                                       #DI=0000h#
+[  22]        :                                       #BP=0000h#
+[  23]        :                                       
+[  24]        :                                       
+[  25]        :                                       ;To jump the initialisation part of the code.
+[  26]    0000: EB 4A                                 jmp st1
+[  27]        :                                       
+[  28]        :                                       
+[  29]        :                                       ;To initialise the ports of the 8255s
+[  30]        :                                       Port1A equ 00h    ;CHANGE IF THERE IS AN ERROR!!!!!!!!
+[  31]        :                                       Port1B equ 02h
+[  32]        :                                       Port1C equ 04h
+[  33]        :                                       Creg1 equ  06h
+[  34]        :                                       
+[  35]        :                                       Port2A equ 10h
+[  36]        :                                       Port2B equ 12h
+[  37]        :                                       Port2C equ 14h
+[  38]        :                                       Creg2 equ  16h
+[  39]        :                                       
+[  40]        :                                       ;Hex codes for keypad
+[  41]    0002: EE ED EB E7                           TableK    db    0eeh, 0edh, 0ebh, 0e7h,        ;0, 1, 2, 3
+[  42]    0006: DE DD DB D7                           db    0deh, 0ddh, 0dbh, 0d7h,        ;4, 5, 6, 7,
+[  43]    000A: BE BD BB B7                           db    0beh, 0bdh, 0bbh, 0b7h,        ;8, 9, Backspace, Enter,
+[  44]    000E: 7E                                    db    07eh                        ;Test
+[  45]        :                                       
+[  46]        :                                       ;Hex codes for display
+[  47]    000F: C0 F9 A4 B0                           TableD     db     0c0h, 0f9h, 0a4h, 0b0h        ;0, 1, 2, 3,
+[  48]    0013: 99 92 82 F8                           db    099h, 092h, 082h, 0f8h        ;4, 5, 6, 7,
+[  49]    0017: 80 90 8C 88                           db    080h, 090h, 08ch, 088h        ;8, 9, P, A,
+[  50]    001B: 92 8E F9 C7                           db    092h, 08eh, 0f9h, 0c7h        ;S, F, I, L
+[  51]        :                                       
+[  52]        :                                       
+[  53]        :                                       ;Initialise the stack
+[  54]        :                                       ;Stack1 dw 30 dup(0)
+[  55]        :                                       ;Tstack1 dw 0
+[  56]        :                                       
+[  57]        :                                       ;Create the database with IC numbers
+[  58]    001F: 37 34 30 30                           NandIC     db '7400'
+[  59]    0023: 37 34 30 38                           AndIC    db '7408'
+[  60]    0027: 37 34 33 32                           OrIC     db '7432'
+[  61]    002B: 37 34 38 36                           XorIC     db '7486'
+[  62]    002F: 37 34 37 32 36 36                     XnorIC     db '747266'
+[  63]    0035: 00 00 00 00 00 00                     IpIC    db 6 dup(0)
+[  64]    003B: 8E 8E 8E 8E 8E 8E                     IpIC2    db 6 dup(08eh)
+[  65]        :                                       
+[  66]    0041: 00                                    CntDgts db 0
+[  67]    0042: 00                                    FLAG    db 0
+[  68]    0043: 8E 88 F9 C7 00                        FAILW    db 08EH,088H,0F9H,0C7H,00h
+[  69]    0048: 8C 88 92 92                           PASSW    db 08CH,088H,092H,092H
+[  70]        :                                       
+[  71]        :                                       
+[  72]        :                                       ;CODE STARTS FROM HERE
+[  73]    004C: FA                                    st1:    CLI
+[  74]        :                                       
+[  75]        :                                       ;Initialise the segments.
+[  76]    004D: B8 00 02                              	MOV AX,0200H
+[  77]    0050: 8E D8                                 	MOV DS,AX
+[  78]    0052: 8E C0                                 	MOV ES,AX
+[  79]    0054: 8E D0                                 	MOV SS,AX
+[  80]    0056: BC FE FF                              	MOV SP,0FFFEH
+[  81]        :                                       
+[  82]        :                                       ;Initialise the Stack Pointer.
+[  83]        :                                       ;lEA SP,Tstack1
+[  84]        :                                       
+[  85]        :                                       ;Initialise the 8255s
+[  86]        :                                       ;8255_1
+[  87]    0059: B0 88                                 MOV AL,10001000b
+[  88]    005B: E6 06                                 OUT Creg1,AL
+[  89]    005D: B0 FF                                 MOV AL,11111111B
+[  90]    005F: E6 00                                 OUT Port1A,AL
+[  91]        :                                       ;8255_2
+[  92]        :                                       ;MOV AL,10001010b
+[  93]        :                                       ;OUT Creg2,AL
+[  94]        :                                       
+[  95]    0061: B0 00                                 X0:        MOV AL,00H
+[  96]    0063: E6 04                                 OUT Port1C,AL
+[  97]    0065: 2E 8A 2E 41 00                        X1:     Z22:    MOV CH,cs:CntDgts
+[  98]    006A: B0 00                                 mov al,0h
+[  99]    006C: E6 02                                 OUT Port1B,al
+[ 100]    006E: 80 FD 00                              cmp ch,0
+[ 101]    0071: 74 20                                 je zx
+[ 102]    0073: BD 00 00                              MOV bp,0
+[ 103]        :                                       ;LEA SI,CS:IpIC2
+[ 104]    0076: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 105]    007A: B3 01                                 mov    bL,1
+[ 106]        :                                       
+[ 107]    007C: B0 00                                 Z21:    mov al,0
+[ 108]    007E: E6 02                                 out Port1B,al
+[ 109]    0080: 8A C7                                 mov    al,bH
+[ 110]    0082: E6 00                                 out    Port1A,al
+[ 111]        :                                       
+[ 112]    0084: 8A C3                                 mov    AL,BL
+[ 113]    0086: E6 02                                 out    Port1B,al
+[ 114]        :                                       
+[ 115]        :                                       ;call sub1
+[ 116]    0088: D0 C3                                 rol    bl,1
+[ 117]    008A: 45                                    INC bp
+[ 118]    008B: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 119]    008F: FE CD                                 DEC CH
+[ 120]    0091: 75 E9                                 JNZ Z21
+[ 121]    0093:                                       zx:        ;Jump to DISPLAY during every poll
+[ 122]    0093: E4 04                                 IN AL, Port1C    ;
+[ 123]    0095: 24 F0                                 AND AL,0F0H        ;CHECK FOR KEY RELEASE
+[ 124]    0097: 3C F0                                 j1:        CMP AL,0f0H        ;
+[ 125]    0099: 75 CA                                 JNZ X1
+[ 126]        :                                       
+[ 127]    009B: 2E 8A 2E 41 00                        X2:        Z12:    MOV CH,cs:CntDgts
+[ 128]    00A0: B0 00                                 mov al,0h
+[ 129]    00A2: E6 02                                 OUT Port1B,al
+[ 130]    00A4: 80 FD 00                              cmp ch,0
+[ 131]    00A7: 74 20                                 je zy
+[ 132]    00A9: BD 00 00                              MOV bp,0
+[ 133]        :                                       ;LEA SI,CS:IpIC2
+[ 134]    00AC: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 135]    00B0: B3 01                                 mov    bL,1
+[ 136]    00B2: B0 00                                 Z11:    mov al,0
+[ 137]    00B4: E6 02                                 out Port1B,al
+[ 138]        :                                       
+[ 139]    00B6: 8A C7                                 mov    al,bH
+[ 140]    00B8: E6 00                                 out    Port1A,al
+[ 141]    00BA: 8A C3                                 mov    AL,BL
+[ 142]    00BC: E6 02                                 out    Port1B,al
+[ 143]        :                                       ;call sub1
+[ 144]    00BE: D0 C3                                 rol    bl,1
+[ 145]    00C0: 45                                    INC bp
+[ 146]    00C1: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 147]    00C5: FE CD                                 DEC CH
+[ 148]    00C7: 75 E9                                 JNE Z11
+[ 149]    00C9:                                       zy:
+[ 150]    00C9: B0 00                                 MOV AL,00H
+[ 151]    00CB: E6 04                                 OUT Port1C,AL
+[ 152]    00CD: E4 04                                 IN AL,Port1C
+[ 153]    00CF: 24 F0                                 AND AL,0F0H
+[ 154]    00D1: 3C F0                                 j2:        CMP AL,0F0H
+[ 155]    00D3: 74 C6                                 JZ X2
+[ 156]        :                                       
+[ 157]        :                                       ;call DISDIG
+[ 158]        :                                       ;CALL D20MS
+[ 159]        :                                       ;MOV AL,00H
+[ 160]        :                                       ;OUT Port1C,AL
+[ 161]        :                                       ;IN AL,Port1C
+[ 162]        :                                       ;AND AL,0F0H
+[ 163]        :                                       ;CMP AL,0F0H
+[ 164]        :                                       ;JZ X2
+[ 165]        :                                       ;inc cs:CntDgts
+[ 166]        :                                       ;mov ch,6
+[ 167]        :                                       ;inc CntDgts
+[ 168]        :                                       ;CALL DISDIG
+[ 169]    00D5: B0 0E                                 MOV AL,0EH
+[ 170]    00D7: 8A D8                                 MOV BL,AL
+[ 171]    00D9: E6 04                                 OUT Port1C,AL
+[ 172]    00DB: E4 04                                 IN  AL,Port1C
+[ 173]    00DD: 24 F0                                 AND AL,0F0H
+[ 174]    00DF: 3C F0                                 CMP AL,0F0H
+[ 175]    00E1: 75 2A                                 JNZ X3
+[ 176]        :                                       
+[ 177]    00E3: B0 0D                                 MOV AL,0DH
+[ 178]    00E5: 8A D8                                 MOV BL,AL
+[ 179]    00E7: E6 04                                 OUT Port1C,AL
+[ 180]    00E9: E4 04                                 IN AL,Port1C
+[ 181]    00EB: 24 F0                                 AND AL,0F0H
+[ 182]    00ED: 3C F0                                 CMP AL,0F0H
+[ 183]    00EF: 75 1C                                 JNZ X3
+[ 184]        :                                       
+[ 185]    00F1: B0 0B                                 MOV AL,0BH
+[ 186]    00F3: 8A D8                                 MOV BL,AL
+[ 187]    00F5: E6 04                                 OUT Port1C,AL
+[ 188]    00F7: E4 04                                 IN  AL,Port1C
+[ 189]    00F9: 24 F0                                 AND AL,0F0H
+[ 190]    00FB: 3C F0                                 CMP AL,0F0H
+[ 191]    00FD: 75 0E                                 JNZ X3
+[ 192]        :                                       
+[ 193]    00FF: B0 07                                 MOV AL, 07H
+[ 194]    0101: 8A D8                                 MOV BL,AL
+[ 195]    0103: E6 04                                 OUT Port1C,AL
+[ 196]    0105: E4 04                                 IN  AL,Port1C
+[ 197]    0107: 24 F0                                 AND AL,0F0H
+[ 198]    0109: 3C F0                                 CMP AL,0F0H
+[ 199]    010B: 74 8E                                 JZ X2
+[ 200]        :                                       
+[ 201]    010D: 0A C3                                 X3:        OR AL,BL
+[ 202]    010F: B9 0F 00                              MOV CX,0FH
+[ 203]    0112: BF 00 00                              MOV DI,00H
+[ 204]    0115: 2E 3A 45 02                           X4:        CMP AL,CS:TableK[DI]
+[ 205]    0119: 74 03                                 JZ  X5
+[ 206]    011B: 47                                    INC DI
+[ 207]    011C: E2 F7                                 LOOP X4
+[ 208]        :                                       
+[ 209]    011E: BB 0F 00                              X5:        LEA BX,TableD
+[ 210]    0121: 83 FF 09                              CMP DI,9
+[ 211]    0124: 77 2D                                 JA BCKSPC
+[ 212]    0126: 2E 80 3E 41 00 06                     CMP cs:CntDgts,6                ;Checking if the number of digits are less than 6 to take input
+[ 213]    012C: 75 03 E9 30 FF                        JE X0
+[ 214]        :                                       ;LEA SI,IpIC
+[ 215]    0131: 2E 8A 16 41 00                        mov Dl,cs:CntDgts
+[ 216]    0136: B6 00                                 mov dh,0
+[ 217]    0138: 8B F2                                 mov si,dx
+[ 218]    013A: 8B C7                                 MOV AX,DI
+[ 219]    013C: 05 30 00                              ADD AX,'0'
+[ 220]    013F: 2E 88 44 35                           MOV cs:IpIC[si],AL
+[ 221]        :                                       ;LEA SI,IpIC2
+[ 222]    0143: 2E 8A 45 0F                           MOV AL,CS:TableD[Di]
+[ 223]    0147: 2E 88 44 3B                           MOV cs:IPIC2[si],AL
+[ 224]    014B: 2E FE 06 41 00                        INC cs:CntDgts
+[ 225]    0150: E9 0E FF                              jmp x0
+[ 226]        :                                       ;mov ch,6
+[ 227]        :                                       ;call DISDIG                    ;Jump to DISPLAY if there is a digit entered
+[ 228]    0153:                                       j3:
+[ 229]    0153: 83 FF 0A                              BCKSPC:    CMP DI,10                    ;Check for Backspace
+[ 230]    0156: 75 13                                 JNE ENTER1
+[ 231]    0158: 2E 80 3E 41 00 00                     CMP cs:CntDgts,0
+[ 232]    015E: 75 03 E9 FE FE                        JE X0                        ;Checking if the digits are more than 0 before backspace
+[ 233]    0163: 2E FE 0E 41 00                        DEC cs:CntDgts
+[ 234]    0168: E9 F6 FE                              jmp x0
+[ 235]        :                                       
+[ 236]    016B: 83 FF 0B                              ENTER1:    CMP DI,11                    ;Check for enter
+[ 237]    016E: 74 03 E9 EE FE                        JNE X0
+[ 238]        :                                       ;If it is enter, we take in only one key-press. ie, TEST
+[ 239]    0173: B0 00                                 Y0:        MOV AL,00H
+[ 240]    0175: E6 04                                 OUT Port1C,AL
+[ 241]    0177:                                       Y1:
+[ 242]    0177: 2E 8A 2E 41 00                        Z32:    MOV CH,cs:CntDgts
+[ 243]    017C: 80 FD 00                              cmp ch,0
+[ 244]    017F: 74 20                                 je zx1
+[ 245]    0181: BD 00 00                              MOV bp,0
+[ 246]        :                                       
+[ 247]    0184: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 248]    0188: B3 01                                 mov    bL,1
+[ 249]        :                                       
+[ 250]    018A: B0 00                                 Z31:    mov al,0
+[ 251]    018C: E6 02                                 out Port1B,al
+[ 252]    018E: 8A C7                                 mov    al,bH
+[ 253]    0190: E6 00                                 out    Port1A,al
+[ 254]        :                                       
+[ 255]    0192: 8A C3                                 mov    AL,BL
+[ 256]    0194: E6 02                                 out    Port1B,al
+[ 257]        :                                       
+[ 258]        :                                       ;call sub1
+[ 259]    0196: D0 C3                                 rol    bl,1
+[ 260]    0198: 45                                    INC bp
+[ 261]    0199: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 262]    019D: FE CD                                 DEC CH
+[ 263]    019F: 75 E9                                 JNZ Z31
+[ 264]    01A1:                                       zx1:
+[ 265]    01A1: E4 04                                 IN AL, Port1C
+[ 266]    01A3: 24 F0                                 AND AL,0F0H
+[ 267]    01A5: 3C F0                                 CMP AL,0F0H
+[ 268]    01A7: 75 CE                                 JNZ Y1
+[ 269]        :                                       
+[ 270]    01A9: B0 00                                 MOV AL,00H
+[ 271]    01AB: E6 04                                 OUT Port1C,AL
+[ 272]    01AD:                                       Y2:;
+[ 273]    01AD: 2E 8A 2E 41 00                        Z42:    MOV CH,cs:CntDgts
+[ 274]    01B2: 80 FD 00                              cmp ch,0
+[ 275]    01B5: 74 20                                 je zx2
+[ 276]    01B7: BD 00 00                              MOV bp,0
+[ 277]        :                                       
+[ 278]    01BA: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 279]    01BE: B3 01                                 mov    bL,1
+[ 280]        :                                       
+[ 281]    01C0: B0 00                                 Z41:    mov al,0
+[ 282]    01C2: E6 02                                 out Port1B,al
+[ 283]    01C4: 8A C7                                 mov    al,bH
+[ 284]    01C6: E6 00                                 out    Port1A,al
+[ 285]        :                                       
+[ 286]    01C8: 8A C3                                 mov    AL,BL
+[ 287]    01CA: E6 02                                 out    Port1B,al
+[ 288]        :                                       
+[ 289]        :                                       ;call sub1
+[ 290]    01CC: D0 C3                                 rol    bl,1
+[ 291]    01CE: 45                                    INC bp
+[ 292]    01CF: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 293]    01D3: FE CD                                 DEC CH
+[ 294]    01D5: 75 E9                                 JNZ Z41
+[ 295]    01D7:                                       zx2:
+[ 296]    01D7: B0 00                                 MOV AL,00H
+[ 297]    01D9: E6 04                                 OUT Port1C,AL
+[ 298]    01DB: E4 04                                 IN AL,Port1C
+[ 299]    01DD: 24 F0                                 AND AL,0F0H
+[ 300]    01DF: 3C F0                                 CMP AL,0F0H
+[ 301]    01E1: 74 CA                                 JZ Y2
+[ 302]        :                                       
+[ 303]    01E3: B0 00                                 MOV AL,00H
+[ 304]    01E5: E6 04                                 OUT Port1C,AL
+[ 305]    01E7: E4 04                                 IN AL,Port1C
+[ 306]    01E9: 24 F0                                 AND AL,0F0H
+[ 307]    01EB: 3C F0                                 CMP AL,0F0H
+[ 308]    01ED: 74 BE                                 JZ Y2
+[ 309]        :                                       
+[ 310]    01EF: B0 0E                                 MOV AL, 0eH
+[ 311]    01F1: 8A D8                                 MOV BL,AL
+[ 312]    01F3: E6 04                                 OUT Port1C,AL
+[ 313]    01F5: E4 04                                 IN  AL,Port1C
+[ 314]    01F7: 24 F0                                 AND AL,0F0H
+[ 315]    01F9: 3C F0                                 CMP AL,0F0H
+[ 316]    01FB: 74 B0                                 JZ Y2
+[ 317]        :                                       
+[ 318]        :                                       
+[ 319]    01FD: 0A C3                                 Y3:        OR AL,BL
+[ 320]    01FF: B9 0F 00                              MOV CX,0FH
+[ 321]    0202: BF 00 00                              MOV DI,00H
+[ 322]        :                                       
+[ 323]    0205: 2E 3A 45 02                           Y4:        CMP AL,CS:TableK[DI]
+[ 324]    0209: 74 03                                 JZ  Y5
+[ 325]    020B: 47                                    INC DI
+[ 326]    020C: E2 F7                                 LOOP Y4
+[ 327]        :                                       
+[ 328]    020E: 83 FF 0C                              Y5:        CMP DI,12
+[ 329]    0211: 74 03 E9 5D FF                        JNE Y0
+[ 330]        :                                       
+[ 331]    0216: 2E 8A 26 41 00                        MOV AH,cs:CntDgts
+[ 332]    021B: 80 FC 04                              CMP AH,4
+[ 333]    021E: 74 08                                 JE NEXT4
+[ 334]    0220: 80 FC 06                              CMP AH,6
+[ 335]    0223: 74 7B                                 JE NEXT6
+[ 336]    0225: E9 E8 02                              JMP FAIL
+[ 337]        :                                       			;Checking in 4 digit IC database
+[ 338]    0228:                                       NEXT4:
+[ 339]    0228: B9 04 00                              MOV CX,4
+[ 340]        :                                       ;LEA SI,IpIC
+[ 341]    022B: BD 00 00                              		mov bp,0
+[ 342]    022E: 2E 8A 46 35                           d1:     mov al,CS:IpIC[bp]
+[ 343]        :                                       ;LEA DI,NandIC
+[ 344]    0232: 2E 8A 66 1F                           mov ah,CS:NandIC[bp]
+[ 345]    0236: 45                                    inc bp
+[ 346]    0237: 3A E0                                 cmp ah,al            ;Checking for NAND
+[ 347]    0239: 75 0B                                 jne d2
+[ 348]    023B: 49                                    dec cx
+[ 349]    023C: 83 F9 00                              CMP CX,0
+[ 350]    023F: 75 03 E9 FA 00                        JE TESTNAND
+[ 351]    0244: EB E8                                 jmp d1
+[ 352]        :                                       
+[ 353]        :                                       
+[ 354]    0246: BD 00 00                              d2:     mov bp,0
+[ 355]    0249: B9 04 00                              mov cx,4
+[ 356]    024C: 2E 8A 46 35                           d3:     mov al,cs:IpIC[bp]
+[ 357]        :                                       ;LEA DI,AndIC
+[ 358]    0250: 2E 8A 66 23                           mov ah,CS:AndIC[bp]
+[ 359]    0254: 45                                    inc bp
+[ 360]    0255: 3A E0                                 cmp ah,al            ;Checking for AND
+[ 361]    0257: 75 08                                 jne d4
+[ 362]    0259: 49                                    dec cx
+[ 363]    025A: 83 F9 00                              CMP CX,0
+[ 364]    025D: 74 62                                 JE TESTAND
+[ 365]    025F: EB EB                                 jmp d3
+[ 366]        :                                       
+[ 367]    0261: BD 00 00                              d4:     mov bp,0
+[ 368]    0264: B9 04 00                              mov cx,4
+[ 369]    0267: 2E 8A 46 35                           d5:     mov al,cs:IpIC[bp]
+[ 370]        :                                       ;LEA DI,ORIC
+[ 371]    026B: 2E 8A 66 27                           mov ah,cs:OrIC[bp]
+[ 372]    026F: 45                                    inc bp
+[ 373]    0270: 3A E0                                 cmp ah,al            ;Checking for OR
+[ 374]    0272: 75 0B                                 jne d6
+[ 375]    0274: 49                                    dec cx
+[ 376]    0275: 83 F9 00                              CMP CX,0
+[ 377]    0278: 75 03 E9 3E 01                        JE TESTOR
+[ 378]    027D: EB E8                                 jmp d5
+[ 379]        :                                       
+[ 380]    027F: BD 00 00                              d6:     mov bp,0
+[ 381]    0282: B9 04 00                              mov cx,4
+[ 382]    0285: 2E 8A 46 35                           d7:     mov al,CS:IpIC[bp]
+[ 383]        :                                       ;LEA DI,XORdIC
+[ 384]    0289: 2E 8A 66 2B                           mov ah,CS:XorIC[bp]
+[ 385]    028D: 45                                    inc bp
+[ 386]    028E: 3A E0                                 cmp ah,al            ;Checking for Xor
+[ 387]    0290: 75 0B                                 jne d8
+[ 388]    0292: 49                                    dec cx
+[ 389]    0293: 83 F9 00                              CMP CX,0
+[ 390]    0296: 75 03 E9 9D 01                        JE TESTXOR
+[ 391]    029B: EB E8                                 jmp d7
+[ 392]        :                                       
+[ 393]    029D: E9 70 02                              d8:     JMP FAIL                ;If none of the ICs in the database match, then fail
+[ 394]        :                                       
+[ 395]        :                                       
+[ 396]        :                                       ;Check the IC number in the 6 digit IC database
+[ 397]    02A0: BD 00 00                              NEXT6:    mov bp,0
+[ 398]    02A3: B9 06 00                              mov cx,6
+[ 399]    02A6: 2E 8A 46 35                           d9:               mov al,CS:IpIC[bp]
+[ 400]        :                                       ;LEA DI,NandIC
+[ 401]    02AA: 2E 8A 66 2F                           mov ah,CS:XnorIC[bp]
+[ 402]    02AE: 45                                    inc bp
+[ 403]    02AF: 3A E0                                 cmp ah,al            ;Checking for Xnor
+[ 404]    02B1: 75 0B                                 jne d10
+[ 405]    02B3: 49                                    dec cx
+[ 406]    02B4: 83 F9 00                              CMP CX,0
+[ 407]    02B7: 75 03 E9 F0 01                        JE TESTXNOR
+[ 408]    02BC: EB E8                                 jmp d9
+[ 409]        :                                       
+[ 410]    02BE: E9 4F 02                              d10:    JMP FAIL                ;If none of the ICs in the database match, then fail
+[ 411]        :                                       
+[ 412]    02C1:                                       TESTAND:
+[ 413]        :                                       ;CREG
+[ 414]    02C1: B0 8A                                 MOV AL,10001010b
+[ 415]    02C3: E6 16                                 OUT Creg2,AL
+[ 416]        :                                       
+[ 417]        :                                       ;ACTUAL
+[ 418]    02C5: B0 00                                 MOV AL,00
+[ 419]    02C7: E6 10                                 OUT Port2A,AL
+[ 420]    02C9: E6 14                                 OUT Port2C,AL
+[ 421]    02CB: E4 12                                 IN AL,Port2B
+[ 422]    02CD: 24 03                                 AND AL,3
+[ 423]    02CF: 3C 00                                 CMP AL,0
+[ 424]    02D1: 74 03 E9 3A 02                        JNE FAIL
+[ 425]    02D6: E4 14                                 IN AL,Port2C
+[ 426]    02D8: 24 30                                 AND AL,30H
+[ 427]    02DA: 3C 00                                 CMP AL,0
+[ 428]    02DC: 74 03 E9 2F 02                        JNE FAIL
+[ 429]        :                                       
+[ 430]        :                                       
+[ 431]    02E1: B0 1A                                 MOV AL,1AH
+[ 432]    02E3: E6 10                                 OUT Port2A,AL
+[ 433]    02E5: B0 02                                 MOV AL,2H
+[ 434]    02E7: E6 14                                 OUT Port2C,AL
+[ 435]    02E9: E4 12                                 IN AL,Port2B
+[ 436]    02EB: 24 03                                 AND AL,3
+[ 437]    02ED: 3C 00                                 CMP AL,0
+[ 438]    02EF: 74 03 E9 1C 02                        JNE FAIL
+[ 439]    02F4: E4 14                                 IN AL,Port2C
+[ 440]    02F6: 24 30                                 AND AL,30H
+[ 441]    02F8: 3C 00                                 CMP AL,0
+[ 442]    02FA: 74 03 E9 11 02                        JNE FAIL
+[ 443]        :                                       
+[ 444]    02FF: B0 25                                 MOV AL,25H
+[ 445]    0301: E6 10                                 OUT Port2A,AL
+[ 446]    0303: B0 01                                 MOV AL,1H
+[ 447]    0305: E6 14                                 OUT Port2C,AL
+[ 448]    0307: E4 12                                 IN AL,Port2B
+[ 449]    0309: 24 03                                 AND AL,3
+[ 450]    030B: 3C 00                                 CMP AL,0
+[ 451]    030D: 74 03 E9 FE 01                        JNE FAIL
+[ 452]    0312: E4 14                                 IN AL,Port2C
+[ 453]    0314: 24 30                                 AND AL,30H
+[ 454]    0316: 3C 00                                 CMP AL,0
+[ 455]    0318: 74 03 E9 F3 01                        JNE FAIL
+[ 456]        :                                       
+[ 457]    031D: B0 3F                                 MOV AL,3FH
+[ 458]    031F: E6 10                                 OUT Port2A,AL
+[ 459]    0321: B0 03                                 MOV AL,3H
+[ 460]    0323: E6 14                                 OUT Port2C,AL
+[ 461]    0325: E4 12                                 IN AL,Port2B
+[ 462]    0327: 24 03                                 AND AL,3
+[ 463]    0329: 3C 03                                 CMP AL,3
+[ 464]    032B: 74 03 E9 E0 01                        JNE FAIL
+[ 465]    0330: E4 14                                 IN AL,Port2C
+[ 466]    0332: 24 30                                 AND AL,30H
+[ 467]    0334: 3C 30                                 CMP AL,30H
+[ 468]    0336: 74 03 E9 D5 01                        JNE FAIL
+[ 469]        :                                       
+[ 470]    033B: E9 03 02                              JMP PASS
+[ 471]        :                                       
+[ 472]        :                                       ;Testing for NAND-IC
+[ 473]    033E:                                       TESTNAND:
+[ 474]        :                                       ;CREG
+[ 475]    033E: B0 8A                                 MOV AL,10001010b
+[ 476]    0340: E6 16                                 OUT Creg2,AL
+[ 477]        :                                       
+[ 478]    0342: B0 00                                 MOV AL,00
+[ 479]    0344: E6 10                                 OUT Port2A,AL
+[ 480]    0346: E6 14                                 OUT Port2C,AL
+[ 481]    0348: E4 12                                 IN AL,Port2B
+[ 482]    034A: 24 03                                 AND AL,3
+[ 483]    034C: 3C 03                                 CMP AL,3
+[ 484]    034E: 74 03 E9 BD 01                        JNE FAIL
+[ 485]    0353: E4 14                                 IN AL,Port2C
+[ 486]    0355: 24 30                                 AND AL,30H
+[ 487]    0357: 3C 30                                 CMP AL,30H
+[ 488]    0359: 74 03 E9 B2 01                        JNE FAIL
+[ 489]        :                                       
+[ 490]    035E: B0 1A                                 MOV AL,1AH
+[ 491]    0360: E6 10                                 OUT Port2A,AL
+[ 492]    0362: B0 02                                 MOV AL,2H
+[ 493]    0364: E6 14                                 OUT Port2C,AL
+[ 494]    0366: E4 12                                 IN AL,Port2B
+[ 495]    0368: 24 03                                 AND AL,3
+[ 496]    036A: 3C 03                                 CMP AL,3
+[ 497]    036C: 74 03 E9 9F 01                        JNE FAIL
+[ 498]    0371: E4 14                                 IN AL,Port2C
+[ 499]    0373: 24 30                                 AND AL,30H
+[ 500]    0375: 3C 30                                 CMP AL,30H
+[ 501]    0377: 74 03 E9 94 01                        JNE FAIL
+[ 502]        :                                       
+[ 503]    037C: B0 25                                 MOV AL,25H
+[ 504]    037E: E6 10                                 OUT Port2A,AL
+[ 505]    0380: B0 01                                 MOV AL,1H
+[ 506]    0382: E6 14                                 OUT Port2C,AL
+[ 507]    0384: E4 12                                 IN AL,Port2B
+[ 508]    0386: 24 03                                 AND AL,3
+[ 509]    0388: 3C 03                                 CMP AL,3
+[ 510]    038A: 74 03 E9 81 01                        JNE FAIL
+[ 511]    038F: E4 14                                 IN AL,Port2C
+[ 512]    0391: 24 30                                 AND AL,30H
+[ 513]    0393: 3C 30                                 CMP AL,30H
+[ 514]    0395: 74 03 E9 76 01                        JNE FAIL
+[ 515]        :                                       
+[ 516]    039A: B0 3F                                 MOV AL,3FH
+[ 517]    039C: E6 10                                 OUT Port2A,AL
+[ 518]    039E: B0 03                                 MOV AL,3H
+[ 519]    03A0: E6 14                                 OUT Port2C,AL
+[ 520]    03A2: E4 12                                 IN AL,Port2B
+[ 521]    03A4: 24 03                                 AND AL,3
+[ 522]    03A6: 3C 00                                 CMP AL,0
+[ 523]    03A8: 74 03 E9 63 01                        JNE FAIL
+[ 524]    03AD: E4 14                                 IN AL,Port2C
+[ 525]    03AF: 24 30                                 AND AL,30H
+[ 526]    03B1: 3C 00                                 CMP AL,0H
+[ 527]    03B3: 74 03 E9 58 01                        JNE FAIL
+[ 528]        :                                       
+[ 529]    03B8: E9 86 01                              JMP PASS
+[ 530]        :                                       
+[ 531]        :                                       ;Testing for OR-IC
+[ 532]    03BB:                                       TESTOR:
+[ 533]    03BB: B0 8A                                 MOV AL,10001010b
+[ 534]    03BD: E6 16                                 OUT Creg2,AL
+[ 535]        :                                       
+[ 536]        :                                       
+[ 537]    03BF: B0 00                                 MOV AL,00
+[ 538]    03C1: E6 10                                 OUT Port2A,AL
+[ 539]    03C3: E6 14                                 OUT Port2C,AL
+[ 540]    03C5: E4 12                                 IN AL,Port2B
+[ 541]    03C7: 24 03                                 AND AL,3
+[ 542]    03C9: 3C 00                                 CMP AL,0
+[ 543]    03CB: 74 03 E9 40 01                        JNE FAIL
+[ 544]    03D0: E4 14                                 IN AL,Port2C
+[ 545]    03D2: 24 30                                 AND AL,30H
+[ 546]    03D4: 3C 00                                 CMP AL,0H
+[ 547]    03D6: 74 03 E9 35 01                        JNE FAIL
+[ 548]        :                                       
+[ 549]    03DB: B0 1A                                 MOV AL,1AH
+[ 550]    03DD: E6 10                                 OUT Port2A,AL
+[ 551]    03DF: B0 02                                 MOV AL,2H
+[ 552]    03E1: E6 14                                 OUT Port2C,AL
+[ 553]    03E3: E4 12                                 IN AL,Port2B
+[ 554]    03E5: 24 03                                 AND AL,3
+[ 555]    03E7: 3C 03                                 CMP AL,3
+[ 556]    03E9: 74 03 E9 22 01                        JNE FAIL
+[ 557]    03EE: E4 14                                 IN AL,Port2C
+[ 558]    03F0: 24 30                                 AND AL,30H
+[ 559]    03F2: 3C 30                                 CMP AL,30H
+[ 560]    03F4: 74 03 E9 17 01                        JNE FAIL
+[ 561]        :                                       
+[ 562]    03F9: B0 25                                 MOV AL,25H
+[ 563]    03FB: E6 10                                 OUT Port2A,AL
+[ 564]    03FD: B0 01                                 MOV AL,1H
+[ 565]    03FF: E6 14                                 OUT Port2C,AL
+[ 566]    0401: E4 12                                 IN AL,Port2B
+[ 567]    0403: 24 03                                 AND AL,3
+[ 568]    0405: 3C 03                                 CMP AL,3
+[ 569]    0407: 74 03 E9 04 01                        JNE FAIL
+[ 570]    040C: E4 14                                 IN AL,Port2C
+[ 571]    040E: 24 30                                 AND AL,30H
+[ 572]    0410: 3C 30                                 CMP AL,30H
+[ 573]    0412: 74 03 E9 F9 00                        JNE FAIL
+[ 574]        :                                       
+[ 575]    0417: B0 3F                                 MOV AL,3FH
+[ 576]    0419: E6 10                                 OUT Port2A,AL
+[ 577]    041B: B0 03                                 MOV AL,3H
+[ 578]    041D: E6 14                                 OUT Port2C,AL
+[ 579]    041F: E4 12                                 IN AL,Port2B
+[ 580]    0421: 24 03                                 AND AL,3
+[ 581]    0423: 3C 03                                 CMP AL,3
+[ 582]    0425: 74 03 E9 E6 00                        JNE FAIL
+[ 583]    042A: E4 14                                 IN AL,Port2C
+[ 584]    042C: 24 30                                 AND AL,30H
+[ 585]    042E: 3C 30                                 CMP AL,30H
+[ 586]    0430: 74 03 E9 DB 00                        JNE FAIL
+[ 587]        :                                       
+[ 588]    0435: E9 09 01                              JMP PASS
+[ 589]        :                                       
+[ 590]        :                                       ;Testing for XOR-IC
+[ 591]    0438:                                       TESTXOR:
+[ 592]        :                                       ;CREG
+[ 593]    0438: B0 8A                                 MOV AL,10001010b
+[ 594]    043A: E6 16                                 OUT Creg2,AL
+[ 595]        :                                       
+[ 596]    043C: B0 00                                 MOV AL,00
+[ 597]    043E: E6 10                                 OUT Port2A,AL
+[ 598]    0440: E6 14                                 OUT Port2C,AL
+[ 599]    0442: E4 12                                 IN AL,Port2B
+[ 600]    0444: 24 03                                 AND AL,3
+[ 601]    0446: 3C 00                                 CMP AL,0
+[ 602]    0448: 74 03 E9 C3 00                        JNE FAIL
+[ 603]    044D: E4 14                                 IN AL,Port2C
+[ 604]    044F: 24 30                                 AND AL,30H
+[ 605]    0451: 3C 00                                 CMP AL,0H
+[ 606]    0453: 74 03 E9 B8 00                        JNE FAIL
+[ 607]        :                                       
+[ 608]    0458: B0 1A                                 MOV AL,1AH
+[ 609]    045A: E6 10                                 OUT Port2A,AL
+[ 610]    045C: B0 02                                 MOV AL,2H
+[ 611]    045E: E6 14                                 OUT Port2C,AL
+[ 612]    0460: E4 12                                 IN AL,Port2B
+[ 613]    0462: 24 03                                 AND AL,3
+[ 614]    0464: 3C 03                                 CMP AL,3
+[ 615]    0466: 74 03 E9 A5 00                        JNE FAIL
+[ 616]    046B: E4 14                                 IN AL,Port2C
+[ 617]    046D: 24 30                                 AND AL,30H
+[ 618]    046F: 3C 30                                 CMP AL,30H
+[ 619]    0471: 74 03 E9 9A 00                        JNE FAIL
+[ 620]        :                                       
+[ 621]    0476: B0 25                                 MOV AL,25H
+[ 622]    0478: E6 10                                 OUT Port2A,AL
+[ 623]    047A: B0 01                                 MOV AL,1H
+[ 624]    047C: E6 14                                 OUT Port2C,AL
+[ 625]    047E: E4 12                                 IN AL,Port2B
+[ 626]    0480: 24 03                                 AND AL,3
+[ 627]    0482: 3C 03                                 CMP AL,03
+[ 628]    0484: 74 03 E9 87 00                        JNE FAIL
+[ 629]    0489: E4 14                                 IN AL,Port2C
+[ 630]    048B: 24 30                                 AND AL,30H
+[ 631]    048D: 3C 30                                 CMP AL,30H
+[ 632]    048F: 75 7F                                 JNE FAIL
+[ 633]        :                                       
+[ 634]    0491: B0 3F                                 MOV AL,3FH
+[ 635]    0493: E6 10                                 OUT Port2A,AL
+[ 636]    0495: B0 03                                 MOV AL,3H
+[ 637]    0497: E6 14                                 OUT Port2C,AL
+[ 638]    0499: E4 12                                 IN AL,Port2B
+[ 639]    049B: 24 03                                 AND AL,3
+[ 640]    049D: 3C 00                                 CMP AL,0
+[ 641]    049F: 75 6F                                 JNE FAIL
+[ 642]    04A1: E4 14                                 IN AL,Port2C
+[ 643]    04A3: 24 30                                 AND AL,30H
+[ 644]    04A5: 3C 00                                 CMP AL,0H
+[ 645]    04A7: 75 67                                 JNE FAIL
+[ 646]        :                                       
+[ 647]    04A9: E9 95 00                              JMP PASS
+[ 648]        :                                       
+[ 649]        :                                       ;Testing for XNOR-IC
+[ 650]    04AC:                                       TESTXNOR:
+[ 651]        :                                       ;Changing CREG to suite this particular IC
+[ 652]    04AC: B0 83                                 MOV AL,10000011b
+[ 653]    04AE: E6 16                                 OUT Creg2,AL
+[ 654]        :                                       ;CHANGE IF IT IS WRONG !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+[ 655]        :                                       ;ACTUAL TESTING
+[ 656]    04B0: B0 00                                 MOV AL,00
+[ 657]    04B2: E6 10                                 OUT Port2A,AL
+[ 658]    04B4: E6 14                                 OUT Port2C,AL
+[ 659]    04B6: E4 12                                 IN AL,Port2B
+[ 660]    04B8: 24 03                                 AND AL,3
+[ 661]    04BA: 3C 03                                 CMP AL,3
+[ 662]    04BC: 75 52                                 JNE FAIL
+[ 663]    04BE: E4 14                                 IN AL,Port2C
+[ 664]    04C0: 24 03                                 AND AL,3H
+[ 665]    04C2: 3C 03                                 CMP AL,3H
+[ 666]    04C4: 75 4A                                 JNE FAIL
+[ 667]        :                                       
+[ 668]    04C6: B0 1A                                 MOV AL,1AH
+[ 669]    04C8: E6 10                                 OUT Port2A,AL
+[ 670]    04CA: B0 20                                 MOV AL,20H
+[ 671]    04CC: E6 14                                 OUT Port2C,AL
+[ 672]    04CE: E4 12                                 IN AL,Port2B
+[ 673]    04D0: 24 03                                 AND AL,3
+[ 674]    04D2: 3C 00                                 CMP AL,0
+[ 675]    04D4: 75 3A                                 JNE FAIL
+[ 676]    04D6: E4 14                                 IN AL,Port2C
+[ 677]    04D8: 24 03                                 AND AL,3H
+[ 678]    04DA: 3C 00                                 CMP AL,0H
+[ 679]    04DC: 75 32                                 JNE FAIL
+[ 680]        :                                       
+[ 681]    04DE: B0 25                                 MOV AL,25H
+[ 682]    04E0: E6 10                                 OUT Port2A,AL
+[ 683]    04E2: B0 10                                 MOV AL,10H
+[ 684]    04E4: E6 14                                 OUT Port2C,AL
+[ 685]    04E6: E4 12                                 IN AL,Port2B
+[ 686]    04E8: 24 03                                 AND AL,3
+[ 687]    04EA: 3C 00                                 CMP AL,0
+[ 688]    04EC: 75 22                                 JNE FAIL
+[ 689]    04EE: E4 14                                 IN AL,Port2C
+[ 690]    04F0: 24 03                                 AND AL,3H
+[ 691]    04F2: 3C 00                                 CMP AL,0H
+[ 692]    04F4: 75 1A                                 JNE FAIL
+[ 693]        :                                       
+[ 694]    04F6: B0 3F                                 MOV AL,3FH
+[ 695]    04F8: E6 10                                 OUT Port2A,AL
+[ 696]    04FA: B0 30                                 MOV AL,30H
+[ 697]    04FC: E6 14                                 OUT Port2C,AL
+[ 698]    04FE: E4 12                                 IN AL,Port2B
+[ 699]    0500: 24 03                                 AND AL,3
+[ 700]    0502: 3C 03                                 CMP AL,3
+[ 701]    0504: 75 0A                                 JNE FAIL
+[ 702]    0506: E4 14                                 IN AL,Port2C
+[ 703]    0508: 24 03                                 AND AL,3H
+[ 704]    050A: 3C 03                                 CMP AL,3H
+[ 705]    050C: 75 02                                 JNE FAIL
+[ 706]        :                                       
+[ 707]    050E: EB 31                                 JMP PASS
+[ 708]        :                                       
+[ 709]        :                                       
+[ 710]        :                                       
+[ 711]        :                                       
+[ 712]        :                                       ;To display FAIL
+[ 713]    0510:                                       FAIL:
+[ 714]    0510: BF 00 50                              MOV DI,5000h
+[ 715]        :                                       
+[ 716]        :                                       
+[ 717]    0513: B5 04                                 A2:    MOV CH,4
+[ 718]    0515: BD 00 00                              MOV bp,0
+[ 719]        :                                       
+[ 720]    0518: 2E 8A 7E 43                           mov    bH,cs:FAILW[bp]
+[ 721]    051C: B3 01                                 mov    bL,1
+[ 722]        :                                       
+[ 723]    051E: B0 00                                 A1:    mov al,0
+[ 724]    0520: E6 02                                 out Port1B,al
+[ 725]    0522: 8A C7                                 mov    al,bH
+[ 726]    0524: E6 00                                 out    Port1A,al
+[ 727]        :                                       
+[ 728]    0526: 8A C3                                 mov    AL,BL
+[ 729]    0528: E6 02                                 out    Port1B,al
+[ 730]        :                                       
+[ 731]        :                                       ;call sub1
+[ 732]    052A: D0 C3                                 rol    bl,1
+[ 733]    052C: 45                                    INC bp
+[ 734]    052D: 2E 8A 7E 43                           mov    bH,cs:FAILW[bp]
+[ 735]    0531: FE CD                                 DEC CH
+[ 736]    0533: 75 E9                                 JNZ A1
+[ 737]    0535: 4F                                    dec di
+[ 738]    0536: 75 DB                                 Jnz A2
+[ 739]        :                                       
+[ 740]    0538: B0 00                                 mov al,0
+[ 741]    053A: 2E A2 41 00                           mov cs:CntDgts,al
+[ 742]    053E: E9 0B FB                              jmp st1
+[ 743]        :                                       
+[ 744]        :                                       ;To display PASS
+[ 745]    0541:                                       PASS:
+[ 746]    0541: BF 00 50                              MOV DI,5000h
+[ 747]        :                                       
+[ 748]    0544: B5 04                                 A12:    MOV CH,4
+[ 749]    0546: BD 00 00                              MOV bp,0
+[ 750]        :                                       
+[ 751]    0549: 2E 8A 7E 48                           mov    bH,cs:PASSW[bp]
+[ 752]    054D: B3 01                                 mov    bL,1
+[ 753]        :                                       
+[ 754]    054F: B0 00                                 A11:    mov al,0
+[ 755]    0551: E6 02                                 out Port1B,al
+[ 756]    0553: 8A C7                                 mov    al,bH
+[ 757]    0555: E6 00                                 out    Port1A,al
+[ 758]        :                                       
+[ 759]    0557: 8A C3                                 mov    AL,BL
+[ 760]    0559: E6 02                                 out    Port1B,al
+[ 761]        :                                       
+[ 762]        :                                       ;call sub1
+[ 763]    055B: D0 C3                                 rol    bl,1
+[ 764]    055D: 45                                    INC bp
+[ 765]    055E: 2E 8A 7E 48                           mov    bH,cs:PASSW[bp]
+[ 766]        :                                       
+[ 767]    0562: FE CD                                 DEC CH
+[ 768]    0564: 75 E9                                 JNZ A11
+[ 769]    0566: 4F                                    dec di
+[ 770]    0567: 75 DB                                 Jnz A12
+[ 771]        :                                       
+[ 772]    0569: B0 00                                 mov al,0
+[ 773]    056B: 2E A2 41 00                           mov cs:CntDgts,al
+[ 774]    056F: E9 DA FA                              jmp st1
+[ 775]        :                                       
+[ 776]    0572:                                       DISDIG proc near
+[ 777]        :                                       
+[ 778]    0572: 2E 8A 2E 41 00                        Z2:        MOV CH,cs:CntDgts
+[ 779]    0577: 80 FD 00                              cmp ch,0
+[ 780]    057A: 74 1C                                 je zz
+[ 781]    057C: BD 00 00                              MOV bp,0
+[ 782]        :                                       ;LEA SI,CS:IpIC2
+[ 783]    057F: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 784]    0583: B3 01                                 mov    bL,1
+[ 785]    0585: 8A C3                                 Z1:     mov    AL,BL
+[ 786]    0587: E6 02                                 out    Port1B,al
+[ 787]    0589: 8A C7                                 mov    al,bH
+[ 788]    058B: E6 00                                 out    Port1A,al
+[ 789]        :                                       ;call sub1
+[ 790]    058D: D0 C3                                 rol    bl,1
+[ 791]    058F: 45                                    INC bp
+[ 792]    0590: 2E 8A 7E 3B                           mov    bH,cs:IpIC2[bp]
+[ 793]    0594: FE CD                                 DEC CH
+[ 794]    0596: 75 ED                                 JNE Z1
+[ 795]    0598:                                       zz:
+[ 796]    0598: C3                                    ret
+[ 797]        :                                       DISDIG endp
+[ 798]        :                                       ;MOV AL,FLAG
+[ 799]        :                                       ;CMP AL,0
+[ 800]        :                                       ;JE X0
+[ 801]        :                                       
+[ 802]        :                                       ;CMP AL,1
+[ 803]        :                                       ;JE Y0
+[ 804]        :                                       
+[ 805]        :                                       ;JMP Y0
+[ 806]        :                                       
+[ 807]    0599: B9 AC 08                              D20MS:    mov cx,2220
+[ 808]    059C: E2 FE                                 xn:        loop xn
+[ 809]    059E: C3                                    ret
+[ 810]        :                                       
+[ 811]    059F:                                       sub1 proc near
+[ 812]    059F: 51                                    push      cx
+[ 813]    05A0: B9 0A 00                              mov        cx,10 ; delay generated will be approx 0.45 secs
+[ 814]    05A3: E2 FE                                 Z3:          loop        Z3
+[ 815]    05A5: 59                                    pop       cx
+[ 816]        :                                       sub1 endp
+[ 817]        :                                       
+[ 818]        :                                       
+[ 819]        :                                       
+[ 820]        :                                       ; [SOURCE]: C:\Users\ratna\Downloads\BITS ACADS\2.2\INSTR F241 MICROPROC & INTERFACING (MuP)\Project\19_04_02\code2.asm
+[ 821]        :                                       
+[ 822]        :                                       
+ 
+===================================================================================================
+ 
+
+
+
+
+===================================================================================================
