@@ -14,3 +14,5 @@ Gates to test:
 7486 - XOR
 
 747266 - XNOR
+
+Marks - 30/30
